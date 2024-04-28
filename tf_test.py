@@ -29,14 +29,15 @@ def create_model():
 model = create_model()
 
 # Train your model
-model.fit(X_train, y_train, epochs=10, batch_size=32, validation_split=0.2, class_weight={0:1, 1:2})  # Adjust class_weight based on your data distribution
+model.fit(X_train, y_train, epochs=25, batch_size=32, validation_split=0.2, class_weight={0:1, 1:2})  # Adjust class_weight based on your data distribution
 
 # Once trained, use your model for predictions
 predictions = model.predict(X_test)
 # Convert probabilities to binary labels based on a threshold
 binary_predictions = (predictions > 0.5).astype(int)
-print("Predictions: ", binary_predictions)
 
 # Evaluate your model
 loss, accuracy = model.evaluate(X_test, y_test)
 print("Accuracy: ", accuracy)
+
+# Without messing with the class_weight parameter, the accuracy is 0.9259999990463257
