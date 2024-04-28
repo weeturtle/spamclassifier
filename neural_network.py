@@ -14,6 +14,18 @@ X_test = X_test.T
 y_test = testing_spam[:,0]
 y_test = y_test.reshape(1, -1)
 
+# Combine the training and testing data to create a single dataset
+X = np.concatenate((X_train, X_test), axis=1)
+Y = np.concatenate((y_train, y_test), axis=1)
+
+# Split the data into training and testing sets 1300 training, 200 testing
+X_train = X[:, :1300]
+y_train = Y[:, :1300]
+X_test = X[:, 200:]
+y_test = Y[:, 200:]
+
+
+
 class BinaryNeuralNetwork:
   weights: dict[str, np.ndarray]
   biases: dict[str, np.ndarray]
@@ -35,8 +47,6 @@ class BinaryNeuralNetwork:
       self.weights[f"W{i}"] = np.random.rand(self.layers[i], self.layers[i-1])*0.01
       self.biases[f"b{i}"] = np.zeros((self.layers[i], 1))
   
-  # def forward_propagation(self, X: np.ndarray) -> tuple[
-
 
   def forward_propagation(self, X: np.ndarray) -> tuple[
         np.ndarray, list[
@@ -62,15 +72,18 @@ class BinaryNeuralNetwork:
     caches = []
 
     # Assuming self.layers[-1] is the output layer
-    for i in range(1, len(self.layers) - 1):  # For all layers except the output layer
+    for i in range(1, len(self.layers) - 1):  
         A_Prev = A
         Z = np.dot(self.weights[f"W{i}"], A_Prev) + self.biases[f"b{i}"]
-        A, activation_cache = ReLUActivation.activation_function(Z)  # Use ReLU for hidden layers
+
+        # Use ReLU activation function for all layers except the output layer
+        A, activation_cache = ReLUActivation.activation_function(Z)
         caches.append(((A_Prev, self.weights[f"W{i}"], self.biases[f"b{i}"]), activation_cache))
 
     # Output layer using sigmoid
     Z = np.dot(self.weights[f"W{len(self.layers) - 1}"], A) + self.biases[f"b{len(self.layers) - 1}"]
-    A, activation_cache = SigmoidActivation.activation_function(Z)  # Assuming this is sigmoid
+    # Use sigmoid activation function only for output layer
+    A, activation_cache = SigmoidActivation.activation_function(Z) 
     caches.append(((A, self.weights[f"W{len(self.layers) - 1}"], self.biases[f"b{len(self.layers) - 1}"]), activation_cache))
 
     return A, caches
@@ -123,7 +136,6 @@ class BinaryNeuralNetwork:
   def backwards_propagation(self, AL, Y, caches):
     grads = {}
     L = len(caches)
-    N = AL.shape[1]
     Y = Y.reshape(AL.shape)
 
     dL_dA = - (np.divide(Y, AL) - np.divide(1 - Y, 1 - AL))
@@ -168,19 +180,35 @@ class BinaryNeuralNetwork:
   def predict(self, X):
     Y_hat, _ = self.forward_propagation(X)
     return Y_hat
+  
+  def save_model(self, filename):
+    np.savez(filename, **self.weights, **self.biases)
+
+  def load_model(self, filename):
+    data = np.load(filename)
+    for key in data.keys():
+      if key[0] == 'W':
+        self.weights[key] = data[key]
+      elif key[0] == 'b':
+        self.biases[key] = data[key]
 
 if __name__ == "__main__":
   model = BinaryNeuralNetwork([54, 50, 1])
-  model.generate_initial_layers()
+  model.load_model("spam_model.npz")
+  # model.generate_initial_layers()
 
   print(f"X_train shape: {X_train.shape} should be (54, 1000)")
   print(f"y_train shape: {y_train.shape} should be (1, 1000)")
 
-  model.train_model(X_train, y_train, 3000, 0.2)
+  # model.train_model(X_train, y_train, 3500, 0.25)
 
   y_hat = model.predict(X_test)
 
 
   y_hat = np.where(y_hat > 0.5, 1, 0)
   accuracy = np.mean(y_hat == y_test)
+
+  if accuracy > 0.95:
+    model.save_model("spam_model.npz")
+
   print(f"Accuracy: {accuracy}")
