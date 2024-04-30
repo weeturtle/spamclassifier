@@ -19,10 +19,10 @@ X = np.concatenate((X_train, X_test), axis=1)
 Y = np.concatenate((y_train, y_test), axis=1)
 
 # Split the data into training and testing sets 1300 training, 200 testing
-X_train = X[:, :1300]
-y_train = Y[:, :1300]
-X_test = X[:, 200:]
-y_test = Y[:, 200:]
+X_train = X[:, :1200]
+y_train = Y[:, :1200]
+X_test = X[:, 1200:]
+y_test = Y[:, 1200:]
 
 
 
@@ -32,6 +32,9 @@ class BinaryNeuralNetwork:
   layers: list[int]
 
   def __init__(self, layers: list[int]) -> None:
+    """
+    Initializes the neural network with the number of neurons in each layer.
+    """
     self.layers = layers
     self.weights = {}
     self.biases = {}
@@ -103,7 +106,7 @@ class BinaryNeuralNetwork:
     cost = -1/N * np.sum(Y * np.log(A) + (1 - Y) * np.log(1 - A))
     return cost
 
-  def backwards_propagation_on_layer(self, dL_dA, cache, activation='relu'):
+  def backwards_propagation_on_layer(self, dL_dA, cache, activation='relu') -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Performs backward propagation for a single layer.
     
@@ -133,7 +136,20 @@ class BinaryNeuralNetwork:
 
     return dL_dA_prev, dL_dW, dL_db
 
-  def backwards_propagation(self, AL, Y, caches):
+  def backwards_propagation(self, AL, Y, caches) -> dict[str, np.ndarray]:
+    """
+    The backwards propagation function for the neural network. Uses the final output layer AL and
+    the caches from the forward propagation to calculate the gradient descent values for the weight
+    and biases of each layer. Just uses batch gradient descent for now.
+
+    :param AL: The final output layer as a numpy array of shape (1, 1)
+    :param Y: The true output as a numpy array of shape (1, 1)
+    :param caches: A list of tuples containing all of the values used, before and after functions have 
+                  been applied, in each layer of the network
+
+    :return
+      grads: A dictionary containing the gradient descent values for the weights and biases of each layer
+    """
     grads = {}
     L = len(caches)
     Y = Y.reshape(AL.shape)
@@ -153,15 +169,37 @@ class BinaryNeuralNetwork:
 
     return grads
   
-  def adjust_weights(self, grads, alpha):
+  def adjust_weights(self, grads, alpha) -> None:
+    """
+    Adjust the weights of the layers based on the gradient descent values.
+
+    :param grads: A dictionary containing the gradient descent values for the weights and biases of each layer
+    :param alpha: The learning rate for the model
+    """
     for i in range(1, len(self.layers)):
       self.weights[f"W{i}"] -= alpha * grads[f"dL_dW{i}"]
 
-  def adjust_biases(self, grads, alpha):
+  def adjust_biases(self, grads, alpha) -> None:
+    """
+    Adjust the biases of the layers based on the gradient descent values.
+
+    :param grads: A dictionary containing the gradient descent values for the weights and biases of each layer
+    :param alpha: The learning rate for the model
+    """
     for i in range(1, len(self.layers)):
       self.biases[f"b{i}"] -= alpha * grads[f"dL_db{i}"]
 
-  def train_model(self, X, Y, epochs, alpha=0.01):
+  def train_model(self, X, Y, epochs, alpha=0.01) -> None:
+    """
+    For each epoch, the forwards propagation is performed and the predicted output and cache is used to calculate the 
+    cost and hence the gradient descent values for the weights and biases. The weights and biases are then adjusted
+    based on the provided alpha.
+
+    :param X: The input data as a numpy array of shape (n_features, n_samples)
+    :param Y: The true output as a numpy array of shape (1, n_samples)
+    :param epochs: The number of epochs to train the model for
+    :param alpha: The learning rate for the model
+    """
     cost_cache = []
 
     for i in range(epochs):
@@ -177,14 +215,32 @@ class BinaryNeuralNetwork:
         print(f"Epoch {i}")
         print(f"Cost: {cost}")
 
-  def predict(self, X):
+  def predict(self, X) -> np.ndarray:
+    """
+    Predicts the output of the neural network based on the input data X.
+
+    :param X: The input data as a numpy array of shape (n_features, n_samples)
+
+    :return
+      Y_hat: The predicted output as a numpy array of shape (1, n_samples)
+    """
     Y_hat, _ = self.forward_propagation(X)
     return Y_hat
   
-  def save_model(self, filename):
+  def save_model(self, filename) -> None:
+    """
+    Stores the calculated weights and biases of a trained model to a file.
+
+    :param filename: The name of the file to store the model in
+    """
     np.savez(filename, **self.weights, **self.biases)
 
   def load_model(self, filename):
+    """
+    Retrieves the weights and biases of a trained model from a file and applies them in the model.
+
+    :param filename: The name of the file to retrieve the model from
+    """
     data = np.load(filename)
     for key in data.keys():
       if key[0] == 'W':
@@ -193,14 +249,14 @@ class BinaryNeuralNetwork:
         self.biases[key] = data[key]
 
 if __name__ == "__main__":
-  model = BinaryNeuralNetwork([54, 50, 1])
-  model.load_model("spam_model.npz")
-  # model.generate_initial_layers()
+  model = BinaryNeuralNetwork([54, 45, 1])
+  # model.load_model("spam_model.npz")
+  model.generate_initial_layers()
 
   print(f"X_train shape: {X_train.shape} should be (54, 1000)")
   print(f"y_train shape: {y_train.shape} should be (1, 1000)")
 
-  # model.train_model(X_train, y_train, 3500, 0.25)
+  model.train_model(X_train, y_train, 4000, 0.24)
 
   y_hat = model.predict(X_test)
 
