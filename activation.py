@@ -2,9 +2,25 @@ import numpy as np
 
 class Activation:
   def activation_function(Z: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    The activation function, takes the linear hypothesis Z of each neuron in the layer
+    and returns the value applied to each individually and the Z value for the cache
+
+    :param Z: The linear hypothesis of each neuron in the layer (Z = W*X + b) as a numpy array of shape (1, n_neurons)
+
+    :return
+      np.ndarray: The value applied to each neuron in the layer as a numpy array of shape (1, n_neurons)
+      np.ndarray: The linear hypothesis of each neuron in the layer as a numpy array of shape (1, n_neurons)
+    """
     pass
 
   def derivative_function(Z: np.ndarray) -> np.ndarray:
+    """
+    The derivative of the activation function, takes the linear hypothesis Z of each neuron in the layer
+    and returns the derivative of the value applied to each individually
+
+    :param Z: The linear hypothesis of each neuron in the layer (Z = W*X + b) as a numpy array of shape (1, n_neurons)
+    """
     pass
 
 
@@ -51,6 +67,15 @@ class SigmoidActivation(Activation):
     return sigmoid, Z
 
   def derivative_function(Z: np.ndarray) -> np.ndarray:
+    """
+    The derivative of the sigmoid activation function, takes the linear hypothesis Z of each neuron in the layer
+    and returns the derivative of the sigmoid value applied to each individually
+
+    :param Z: The linear hypothesis of each neuron in the layer (Z = W*X + b) as a numpy array of shape (1, n_neurons)
+
+    :return
+      np.ndarray: The derivative of the sigmoid value applied to each neuron in the layer as a numpy array of shape (1, n_neurons)
+    """
     sigmoid, _ = SigmoidActivation.activation_function(Z)
     return sigmoid * (1 - sigmoid)
 
