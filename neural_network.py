@@ -291,7 +291,15 @@ class BinaryNeuralNetwork:
         self.biases[key] = data[key]
 
 
-  def generate_plot(self, costs: np.ndarray, training_acc: np.ndarray, test_acc: np.ndarray):
+  def generate_plot(self, costs: np.ndarray, training_acc: np.ndarray, test_acc: np.ndarray) -> None:
+    """
+    Generates a plot of the cost and accuracy of the model over the epochs.
+    Used to show if the model is overtraining by comparing the training and testing accuracy.
+
+    :param costs: The cost of the model for each epoch
+    :param training_acc: The accuracy of the model on the training data for each epoch
+    :param test_acc: The accuracy of the model on the testing data for each epoch
+    """
     epochs = range(1, len(costs) + 1)
 
     plt.plot(epochs, costs, label='Cost')
@@ -306,7 +314,7 @@ class BinaryNeuralNetwork:
 if __name__ == "__main__":
     layers = [54, 20, 1]
     model = BinaryNeuralNetwork([54, 20, 1])
-    # model.load_model("spam_model.npz")
+
     model.generate_initial_layers()
 
     costs, training_acc, testing_acc = model.train_model(3000, X, Y, 0.5)
@@ -314,7 +322,6 @@ if __name__ == "__main__":
     model.generate_plot(costs, training_acc, testing_acc)
 
     y_hat = model.predict(X[:, 800:])
-
 
     y_hat = np.where(y_hat > 0.5, 1, 0)
     accuracy = np.mean(y_hat == Y[0, 800:])
