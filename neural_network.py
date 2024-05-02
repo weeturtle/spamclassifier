@@ -1,5 +1,5 @@
 import numpy as np
-from activation import Activation, TanhActivation, SigmoidActivation, TanhActivation
+from final.activation import TanhActivation, SigmoidActivation, TanhActivation
 import matplotlib.pyplot as plt
 
 training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",")
@@ -7,7 +7,7 @@ testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",")
 
 total_spam = np.concatenate((training_spam, testing_spam), axis=0)
 
-X = total_spam[:,1:].T
+X = total_spam[:,1:]
 Y = total_spam[:,0].reshape(1, -1)
 
 # X_train = training_spam[:,1:]
@@ -266,8 +266,8 @@ class BinaryNeuralNetwork:
     :return
       Y_hat: The predicted output as a numpy array of shape (1, n_samples)
     """
-    Y_hat, _ = self.forward_propagation(X)
-    return Y_hat
+    Y_hat, _ = self.forward_propagation(X.T)
+    return np.where(Y_hat > 0.5, 1, 0)
   
   def save_model(self, filename) -> None:
     """
@@ -313,20 +313,39 @@ class BinaryNeuralNetwork:
 
 if __name__ == "__main__":
     layers = [54, 20, 1]
-    model = BinaryNeuralNetwork([54, 20, 1])
+    classifier = BinaryNeuralNetwork([54, 20, 1])
+    classifier.load_model("models/[54, 20, 1]0.979.npz")
+  
+    # model.generate_initial_layers()
 
-    model.generate_initial_layers()
+    testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
+    test_data = testing_spam[:, 1:]
+    test_labels = testing_spam[:, 0]
 
-    costs, training_acc, testing_acc = model.train_model(3000, X, Y, 0.5)
 
-    model.generate_plot(costs, training_acc, testing_acc)
+    # costs, training_acc, testing_acc = model.train_model(3000, X, Y, 0.5)
 
-    y_hat = model.predict(X[:, 800:])
+    # model.generate_plot(costs, training_acc, testing_acc)
 
-    y_hat = np.where(y_hat > 0.5, 1, 0)
-    accuracy = np.mean(y_hat == Y[0, 800:])
+    # y_hat = model.predict(X[:, 800:])
 
-    if accuracy > 0.95:
-      model.save_model(f"models/{layers}{round(accuracy, 3)}.npz")
+    # y_hat = np.where(y_hat > 0.5, 1, 0)
+    # accuracy = np.mean(y_hat == Y[0, 800:])
 
-    print(f"Accuracy: {accuracy}")
+    # if accuracy > 0.95:
+    #   model.save_model(f"models/{layers}{round(accuracy, 3)}.npz")
+
+    # print(f"Accuracy: {accuracy}")
+
+    # testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
+    # test_data = testing_spam[:, 1:]
+    # test_labels = testing_spam[:, 0]
+
+    print(test_data.T.shape)
+    predictions = classifier.predict(test_data)
+
+
+
+    accuracy = np.count_nonzero(predictions == test_labels)/test_labels.shape[0]
+    print(f"Accuracy on test data is: {accuracy}")
+
