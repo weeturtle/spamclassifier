@@ -1,29 +1,34 @@
 import numpy as np
-from activation import Activation, ReLUActivation, SigmoidActivation, TanhActivation
+from activation import Activation, TanhActivation, SigmoidActivation, TanhActivation
 import matplotlib.pyplot as plt
 
 training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",")
 testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",")
 
-X_train = training_spam[:,1:]
-X_train = X_train.T
-y_train = training_spam[:,0]
-y_train = y_train.reshape(1, -1)
+total_spam = np.concatenate((training_spam, testing_spam), axis=0)
 
-X_test = testing_spam[:,1:]
-X_test = X_test.T
-y_test = testing_spam[:,0]
-y_test = y_test.reshape(1, -1)
+X = total_spam[:,1:].T
+Y = total_spam[:,0].reshape(1, -1)
+
+# X_train = training_spam[:,1:]
+# X_train = X_train.T
+# y_train = training_spam[:,0]
+# y_train = y_train.reshape(1, -1)
+
+# X_test = testing_spam[:,1:]
+# X_test = X_test.T
+# y_test = testing_spam[:,0]
+# y_test = y_test.reshape(1, -1)
 
 # Combine the training and testing data to create a single dataset
-X = np.concatenate((X_train, X_test), axis=1)
-Y = np.concatenate((y_train, y_test), axis=1)
+# X = np.concatenate((X_train, X_test), axis=1)
+# Y = np.concatenate((y_train, y_test), axis=1)
 
 # Split the data into training and testing sets 1300 training, 200 testing
-X_train = X[:, :1200]
-y_train = Y[:, :1200]
-X_test = X[:, 1200:]
-y_test = Y[:, 1200:]
+# X_train = X[:, :1200]
+# y_train = Y[:, :1200]
+# X_test = X[:, 1200:]
+# y_test = Y[:, 1200:]
 
 
 
@@ -31,6 +36,7 @@ class BinaryNeuralNetwork:
   weights: dict[str, np.ndarray]
   biases: dict[str, np.ndarray]
   layers: list[int]
+  update_rate_param: int = 100
 
   def __init__(self, layers: list[int]) -> None:
     """
@@ -81,7 +87,7 @@ class BinaryNeuralNetwork:
         Z = np.dot(self.weights[f"W{i}"], A_Prev) + self.biases[f"b{i}"]
 
         # Use ReLU activation function for all layers except the output layer
-        A, activation_cache = ReLUActivation.activation_function(Z)
+        A, activation_cache = TanhActivation.activation_function(Z)
         caches.append(((A_Prev, self.weights[f"W{i}"], self.biases[f"b{i}"]), activation_cache))
 
     # Output layer using sigmoid
@@ -120,7 +126,7 @@ class BinaryNeuralNetwork:
     
     # Choose the derivative function based on the activation parameter
     if activation == 'relu':
-        dA_dZ = ReLUActivation.derivative_function(activation_cache)
+        dA_dZ = TanhActivation.derivative_function(activation_cache)
     elif activation == 'sigmoid':
         dA_dZ = SigmoidActivation.derivative_function(activation_cache)
     else:
@@ -192,10 +198,8 @@ class BinaryNeuralNetwork:
 
   def train_model(self,
                   epochs: int,
-                  X_train: np.ndarray,
-                  Y_train: np.ndarray,
-                  X_test: np.ndarray,
-                  Y_test: np.ndarray,
+                  X_data: np.ndarray,
+                  Y_data: np.ndarray,
                   alpha=0.01
   ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -204,28 +208,39 @@ class BinaryNeuralNetwork:
     based on the provided alpha.
 
     :param epochs: The number of epochs to train the model for
-    :param X_train: The input data as a numpy array of shape (n_features, n_samples)
-    :param Y_train: The true output as a numpy array of shape (1, n_samples)
-    :param X_test: The input data for testing as a numpy array of shape (n_features, n_samples)
-    :param Y_test: The true output for testing as a numpy array of shape (1, n_samples)
+    :param X: The input data as a numpy array of shape (n_features, n_samples)
+    :param Y: The true output as a numpy array of shape (1, n_samples)
+
     :param alpha: The learning rate for the model
 
     :return
       cost_cache: The cost of the model for each epoch
       accuracy_cache: The accuracy of the model for each epoch
     """
-    cost_cache = np.zeros(epochs)
-    training_accuracy_cache = np.zeros(epochs)
-    testing_accuracy_cache = np.zeros(epochs)
 
+    update_rate = epochs // self.update_rate_param
+
+    cost_cache = np.zeros(update_rate)
+    training_accuracy_cache = np.zeros(update_rate)
+    testing_accuracy_cache = np.zeros(update_rate)
+
+    j = 0
     for i in range(epochs):
+      # Shuffle the data and split into training and testing sets
+
+      shuffle_indices = np.random.permutation(X_data.shape[1])
+      X_data = X_data[:, shuffle_indices]
+      Y_data = Y_data[:, shuffle_indices]
+
+      X_train = X_data[:, :1300]
+      Y_train = Y_data[:, :1300]
+      X_test = X_data[:, 1300:]
+      Y_test = Y_data[:, 1300:]
+
       Y_hat, caches = self.forward_propagation(X_train)
 
-      training_accuracy_cache[i] = np.mean(np.where(Y_hat > 0.5, 1, 0) == Y_train)
-      testing_accuracy_cache[i] = np.mean(np.where(self.predict(X_test) > 0.5, 1, 0) == Y_test)
 
       cost = self.cost(Y_hat, Y_train)
-      cost_cache[i] = cost
       grads = self.backwards_propagation(Y_hat, Y_train, caches)
 
       self.adjust_weights(grads, alpha)
@@ -234,6 +249,11 @@ class BinaryNeuralNetwork:
       if (i % 100 == 0):
         print(f"Epoch {i}")
         print(f"Cost: {cost}")
+        cost_cache[j] = cost
+        training_accuracy_cache[j] = np.mean(np.where(Y_hat > 0.5, 1, 0) == Y_train)
+        testing_accuracy_cache[j] = np.mean(np.where(self.predict(X_test) > 0.5, 1, 0) == Y_test)
+        j += 1
+
 
     return cost_cache, training_accuracy_cache, testing_accuracy_cache
 
@@ -271,37 +291,35 @@ class BinaryNeuralNetwork:
         self.biases[key] = data[key]
 
 
-def generate_plot(epochs: int, costs: np.ndarray, training_acc: np.ndarray, test_acc: np.ndarray):
-  epochs = range(1,epochs+1)
+  def generate_plot(self, costs: np.ndarray, training_acc: np.ndarray, test_acc: np.ndarray):
+    epochs = range(1, len(costs) + 1)
 
-  plt.plot(epochs, costs, label='Cost')
-  plt.plot(epochs, training_acc, label='Training Accuracy')
-  plt.plot(epochs, test_acc, label='Test Accuracy')
-  plt.xlabel('Epochs')
-  plt.ylabel('Value')
-  plt.title('Cost and Accuracy Over Epochs')
-  plt.legend()
-  plt.show()
+    plt.plot(epochs, costs, label='Cost')
+    plt.plot(epochs, training_acc, label='Training Accuracy', linestyle='-')
+    plt.plot(epochs, test_acc, label='Test Accuracy', linestyle='-')
+    plt.xlabel('Epochs')
+    plt.ylabel('Value')
+    plt.title('Cost and Accuracy Over Epochs')
+    plt.legend()
+    plt.show()
 
 if __name__ == "__main__":
-  model = BinaryNeuralNetwork([54,45, 1])
-  # model.load_model("spam_model.npz")
-  model.generate_initial_layers()
+    layers = [54, 20, 1]
+    model = BinaryNeuralNetwork([54, 20, 1])
+    # model.load_model("spam_model.npz")
+    model.generate_initial_layers()
 
-  print(f"X_train shape: {X_train.shape} should be (54, 1000)")
-  print(f"y_train shape: {y_train.shape} should be (1, 1000)")
+    costs, training_acc, testing_acc = model.train_model(3000, X, Y, 0.5)
 
-  costs, training_acc, testing_acc = model.train_model(4000, X_train, y_train, X_test, y_test, 0.24)
+    model.generate_plot(costs, training_acc, testing_acc)
 
-  generate_plot(4000, costs, training_acc, testing_acc)
-
-  y_hat = model.predict(X_test)
+    y_hat = model.predict(X[:, 800:])
 
 
-  y_hat = np.where(y_hat > 0.5, 1, 0)
-  accuracy = np.mean(y_hat == y_test)
+    y_hat = np.where(y_hat > 0.5, 1, 0)
+    accuracy = np.mean(y_hat == Y[0, 800:])
 
-  if accuracy > 0.95:
-    model.save_model("spam_model.npz")
+    if accuracy > 0.95:
+      model.save_model(f"models/{layers}{round(accuracy, 3)}.npz")
 
-  print(f"Accuracy: {accuracy}")
+    print(f"Accuracy: {accuracy}")
