@@ -1,5 +1,5 @@
 import numpy as np
-from activation import Activation, ReLUActivation, SigmoidActivation
+from activation import Activation, ReLUActivation, SigmoidActivation, TanhActivation
 
 training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",")
 testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",")
@@ -80,7 +80,7 @@ class BinaryNeuralNetwork:
         Z = np.dot(self.weights[f"W{i}"], A_Prev) + self.biases[f"b{i}"]
 
         # Use ReLU activation function for all layers except the output layer
-        A, activation_cache = ReLUActivation.activation_function(Z)
+        A, activation_cache = TanhActivation.activation_function(Z)
         caches.append(((A_Prev, self.weights[f"W{i}"], self.biases[f"b{i}"]), activation_cache))
 
     # Output layer using sigmoid
@@ -119,7 +119,7 @@ class BinaryNeuralNetwork:
     
     # Choose the derivative function based on the activation parameter
     if activation == 'relu':
-        dA_dZ = ReLUActivation.derivative_function(activation_cache)
+        dA_dZ = TanhActivation.derivative_function(activation_cache)
     elif activation == 'sigmoid':
         dA_dZ = SigmoidActivation.derivative_function(activation_cache)
     else:
@@ -249,14 +249,14 @@ class BinaryNeuralNetwork:
         self.biases[key] = data[key]
 
 if __name__ == "__main__":
-  model = BinaryNeuralNetwork([54, 45, 1])
+  model = BinaryNeuralNetwork([54, 45, 20, 1])
   # model.load_model("spam_model.npz")
   model.generate_initial_layers()
 
   print(f"X_train shape: {X_train.shape} should be (54, 1000)")
   print(f"y_train shape: {y_train.shape} should be (1, 1000)")
 
-  model.train_model(X_train, y_train, 4000, 0.24)
+  model.train_model(X_train, y_train, 3000, 0.8)
 
   y_hat = model.predict(X_test)
 

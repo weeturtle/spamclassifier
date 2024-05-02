@@ -79,3 +79,32 @@ class SigmoidActivation(Activation):
     sigmoid, _ = SigmoidActivation.activation_function(Z)
     return sigmoid * (1 - sigmoid)
 
+
+
+class TanhActivation(Activation):
+  def activation_function(Z: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    The hyperbolic tangent activation function, takes the linear hypothesis Z of each neuron in the layer
+    and returns the tanh value applied to each individually
+
+    :param Z: The linear hypothesis of each neuron in the layer (Z = W*X + b) as a numpy array of shape (1, n_neurons)
+
+    :return 
+      tanh: The tanh value applied to each neuron in the layer as a numpy array of shape (1, n_neurons)
+      Z: The linear hypothesis of each neuron in the layer as a numpy array of shape (1, n_neurons)
+    """
+    tanh = np.tanh(Z)
+    return tanh, Z
+  
+  def derivative_function(Z: np.ndarray) -> np.ndarray:
+    """
+    The deriviative of the hyperbolic tangent activation function, takes the linear hypothesis Z of each neuron in the layer
+    and returns the derivative of the tanh value applied to each individually
+
+    :param Z: The linear hypothesis of each neuron in the layer (Z = W*X + b) as a numpy array of shape (1, n_neurons)
+
+    :return
+      np.ndarray: The derivative of the tanh value applied to each neuron in the layer as a numpy array of shape (1, n_neurons)
+    """
+    tanh, _ = TanhActivation.activation_function(Z)
+    return 1 - np.power(tanh, 2)
