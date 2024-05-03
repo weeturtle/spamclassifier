@@ -2,41 +2,20 @@ import numpy as np
 from final.activation import TanhActivation, SigmoidActivation, TanhActivation
 import matplotlib.pyplot as plt
 
-training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",")
-testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",")
+training_spam = np.loadtxt(open("final/data/training_spam.csv"), delimiter=",")
+testing_spam = np.loadtxt(open("final/data/testing_spam.csv"), delimiter=",")
 
 total_spam = np.concatenate((training_spam, testing_spam), axis=0)
 
 X = total_spam[:,1:]
-Y = total_spam[:,0].reshape(1, -1)
-
-# X_train = training_spam[:,1:]
-# X_train = X_train.T
-# y_train = training_spam[:,0]
-# y_train = y_train.reshape(1, -1)
-
-# X_test = testing_spam[:,1:]
-# X_test = X_test.T
-# y_test = testing_spam[:,0]
-# y_test = y_test.reshape(1, -1)
-
-# Combine the training and testing data to create a single dataset
-# X = np.concatenate((X_train, X_test), axis=1)
-# Y = np.concatenate((y_train, y_test), axis=1)
-
-# Split the data into training and testing sets 1300 training, 200 testing
-# X_train = X[:, :1200]
-# y_train = Y[:, :1200]
-# X_test = X[:, 1200:]
-# y_test = Y[:, 1200:]
-
+Y = total_spam[:,0]
 
 
 class BinaryNeuralNetwork:
   weights: dict[str, np.ndarray]
   biases: dict[str, np.ndarray]
   layers: list[int]
-  update_rate_param: int = 100
+  update_rate_param: int = 10
 
   def __init__(self, layers: list[int]) -> None:
     """
@@ -70,7 +49,7 @@ class BinaryNeuralNetwork:
     linear hypothesis Z to each neuron in each layer. Applies the activation function to the Z values
     and returns the final output layer.
 
-    :param X: The input data as a numpy array of shape (1, n_features)
+    :param X: The input data as a numpy array of shape (n_samples, n_features)
 
     :return 
       A: The final output layer as a numpy array of shape (1, 1)
@@ -224,18 +203,22 @@ class BinaryNeuralNetwork:
     training_accuracy_cache = np.zeros(update_rate)
     testing_accuracy_cache = np.zeros(update_rate)
 
+    # print(f"Shape of X: {X_data.shape}\nShape of Y: {Y_data.shape}")
+    X_data = X_data.T
+    Y_data = Y_data.reshape(1, Y_data.shape[0])
+
     j = 0
     for i in range(epochs):
       # Shuffle the data and split into training and testing sets
 
-      shuffle_indices = np.random.permutation(X_data.shape[1])
-      X_data = X_data[:, shuffle_indices]
-      Y_data = Y_data[:, shuffle_indices]
+      # shuffle_indices = np.random.permutation(X_data.shape[1])
+      # X_data = X_data[:, shuffle_indices]
+      # Y_data = Y_data[:, shuffle_indices]
 
-      X_train = X_data[:, :1300]
-      Y_train = Y_data[:, :1300]
-      X_test = X_data[:, 1300:]
-      Y_test = Y_data[:, 1300:]
+      X_train = X_data[:, :1450]
+      Y_train = Y_data[:, :1450]
+      X_test = X_data[:, 1450:]
+      Y_test = Y_data[:, 1450:]
 
       Y_hat, caches = self.forward_propagation(X_train)
 
@@ -246,12 +229,12 @@ class BinaryNeuralNetwork:
       self.adjust_weights(grads, alpha)
       self.adjust_biases(grads, alpha)
 
-      if (i % 100 == 0):
+      if (i % self.update_rate_param == 0):
         print(f"Epoch {i}")
         print(f"Cost: {cost}")
         cost_cache[j] = cost
         training_accuracy_cache[j] = np.mean(np.where(Y_hat > 0.5, 1, 0) == Y_train)
-        testing_accuracy_cache[j] = np.mean(np.where(self.predict(X_test) > 0.5, 1, 0) == Y_test)
+        testing_accuracy_cache[j] = np.mean(np.where(self.predict(X_test.T) > 0.5, 1, 0) == Y_test)
         j += 1
 
 
@@ -300,7 +283,7 @@ class BinaryNeuralNetwork:
     :param training_acc: The accuracy of the model on the training data for each epoch
     :param test_acc: The accuracy of the model on the testing data for each epoch
     """
-    epochs = range(1, len(costs) + 1)
+    epochs = range(1, len(training_acc) + 1)
 
     plt.plot(epochs, costs, label='Cost')
     plt.plot(epochs, training_acc, label='Training Accuracy', linestyle='-')
@@ -314,38 +297,37 @@ class BinaryNeuralNetwork:
 if __name__ == "__main__":
     layers = [54, 20, 1]
     classifier = BinaryNeuralNetwork([54, 20, 1])
-    classifier.load_model("models/[54, 20, 1]0.979.npz")
+    # classifier.load_model("final/models/[54, 20, 1]0.979.npz")
   
-    # model.generate_initial_layers()
+    classifier.generate_initial_layers()
 
-    testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
-    test_data = testing_spam[:, 1:]
-    test_labels = testing_spam[:, 0]
+    # testing_spam = np.loadtxt(open("final/data/testing_spam.csv"), delimiter=",").astype(int)
+    # test_data = testing_spam[:, 1:]
+    # test_labels = testing_spam[:, 0]
 
+    costs, training_acc, testing_acc = classifier.train_model(2250, X, Y, 0.5)
 
-    # costs, training_acc, testing_acc = model.train_model(3000, X, Y, 0.5)
+    classifier.generate_plot(costs, training_acc, testing_acc)
 
-    # model.generate_plot(costs, training_acc, testing_acc)
+    y_hat = classifier.predict(X[800:, :])
 
-    # y_hat = model.predict(X[:, 800:])
-
-    # y_hat = np.where(y_hat > 0.5, 1, 0)
-    # accuracy = np.mean(y_hat == Y[0, 800:])
+    y_hat = np.where(y_hat > 0.5, 1, 0)
+    accuracy = np.mean(y_hat == Y[800:])
 
     # if accuracy > 0.95:
-    #   model.save_model(f"models/{layers}{round(accuracy, 3)}.npz")
+    #   classifier.save_model(f"models/{layers}{round(accuracy, 3)}.npz")
 
-    # print(f"Accuracy: {accuracy}")
+    print(f"Accuracy: {accuracy}")
 
     # testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
     # test_data = testing_spam[:, 1:]
     # test_labels = testing_spam[:, 0]
 
-    print(test_data.T.shape)
-    predictions = classifier.predict(test_data)
+    # print(test_data.T.shape)
+    # predictions = classifier.predict(test_data)
 
 
 
-    accuracy = np.count_nonzero(predictions == test_labels)/test_labels.shape[0]
-    print(f"Accuracy on test data is: {accuracy}")
+    # accuracy = np.count_nonzero(predictions == test_labels)/test_labels.shape[0]
+    # print(f"Accuracy on test data is: {accuracy}")
 
