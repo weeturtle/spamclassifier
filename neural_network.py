@@ -1,5 +1,5 @@
 import numpy as np
-from final.activation import TanhActivation, SigmoidActivation, TanhActivation
+from final.activation import TanhActivation, SigmoidActivation
 import matplotlib.pyplot as plt
 
 training_spam = np.loadtxt(open("final/data/training_spam.csv"), delimiter=",")
@@ -65,7 +65,7 @@ class BinaryNeuralNetwork:
         A_Prev = A
         Z = np.dot(self.weights[f"W{i}"], A_Prev) + self.biases[f"b{i}"]
 
-        # Use ReLU activation function for all layers except the output layer
+        # Use tanh activation function for all layers except the output layer
         A, activation_cache = TanhActivation.activation_function(Z)
         caches.append(((A_Prev, self.weights[f"W{i}"], self.biases[f"b{i}"]), activation_cache))
 
@@ -92,19 +92,19 @@ class BinaryNeuralNetwork:
     cost = -1/N * np.sum(Y * np.log(A) + (1 - Y) * np.log(1 - A))
     return cost
 
-  def backwards_propagation_on_layer(self, dL_dA, cache, activation='relu') -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+  def backwards_propagation_on_layer(self, dL_dA, cache, activation='tanh') -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Performs backward propagation for a single layer.
     
     :param dL_dA: Gradient of the loss with respect to the activation of the current layer.
     :param cache: Tuple containing (linear_hypothesis_cache, activation_cache) from the current layer's forward propagation.
-    :param activation: The activation function used in the current layer ('relu' or 'sigmoid').
+    :param activation: The activation function used in the current layer ('tanh' or 'sigmoid').
     :return: Gradients with respect to the previous layer's activation, current layer's weights, and biases.
     """
     linear_hypothesis_cache, activation_cache = cache
     
     # Choose the derivative function based on the activation parameter
-    if activation == 'relu':
+    if activation == 'tanh':
         dA_dZ = TanhActivation.derivative_function(activation_cache)
     elif activation == 'sigmoid':
         dA_dZ = SigmoidActivation.derivative_function(activation_cache)
@@ -147,7 +147,7 @@ class BinaryNeuralNetwork:
 
     for i in range(L-1)[::-1]:
       cur_cache = caches[i]
-      dL_dA_prev, dL_dW, dL_db = self.backwards_propagation_on_layer(grads[f"dL_dA{i+1}"], cur_cache, activation='relu')
+      dL_dA_prev, dL_dW, dL_db = self.backwards_propagation_on_layer(grads[f"dL_dA{i+1}"], cur_cache, activation='tanh')
 
       grads[f"dL_dA{i}"] = dL_dA_prev
       grads[f"dL_dW{i+1}"] = dL_dW
