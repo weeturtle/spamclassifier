@@ -49,10 +49,10 @@ class BinaryNeuralNetwork:
     linear hypothesis Z to each neuron in each layer. Applies the activation function to the Z values
     and returns the final output layer.
 
-    :param X: The input data as a numpy array of shape (n_samples, n_features)
+    :param X: The input data as a numpy array of shape (n_features, n_samples)
 
     :return 
-      A: The final output layer as a numpy array of shape (1, 1)
+      A: The final output layer as a numpy array of shape (1, n_samples)
       caches: A list of tuples containing all of the values used, before and after functions have 
               been applied, in each layer of the network
     """
@@ -82,8 +82,8 @@ class BinaryNeuralNetwork:
     The cost function for the neural network. Calculates the binary cross-entropy loss between the
     predicted output A and the true output Y.
 
-    :param A: The predicted output as a numpy array of shape (1, 1)
-    :param Y: The true output as a numpy array of shape (1, 1)
+    :param A: The predicted output as a numpy array of shape (1, n_samples)
+    :param Y: The true output as a numpy array of shape (1, n_samples)
 
     :return
       cost: The binary cross-entropy loss between the predicted and true outputs
@@ -128,8 +128,8 @@ class BinaryNeuralNetwork:
     the caches from the forward propagation to calculate the gradient descent values for the weight
     and biases of each layer. Just uses batch gradient descent for now.
 
-    :param AL: The final output layer as a numpy array of shape (1, 1)
-    :param Y: The true output as a numpy array of shape (1, 1)
+    :param AL: The final output layer as a numpy array of shape (1, n_samples)
+    :param Y: The true output as a numpy array of shape (1, n_samples)
     :param caches: A list of tuples containing all of the values used, before and after functions have 
                   been applied, in each layer of the network
 
@@ -215,10 +215,10 @@ class BinaryNeuralNetwork:
       # X_data = X_data[:, shuffle_indices]
       # Y_data = Y_data[:, shuffle_indices]
 
-      X_train = X_data[:, :1450]
-      Y_train = Y_data[:, :1450]
-      X_test = X_data[:, 1450:]
-      Y_test = Y_data[:, 1450:]
+      X_train = X_data[:, :1400]
+      Y_train = Y_data[:, :1400]
+      X_test = X_data[:, 1400:]
+      Y_test = Y_data[:, 1400:]
 
       Y_hat, caches = self.forward_propagation(X_train)
 
@@ -244,7 +244,7 @@ class BinaryNeuralNetwork:
     """
     Predicts the output of the neural network based on the input data X.
 
-    :param X: The input data as a numpy array of shape (n_features, n_samples)
+    :param X: The input data as a numpy array of shape (n_samples, n_features)
 
     :return
       Y_hat: The predicted output as a numpy array of shape (1, n_samples)
@@ -305,17 +305,18 @@ if __name__ == "__main__":
     # test_data = testing_spam[:, 1:]
     # test_labels = testing_spam[:, 0]
 
-    costs, training_acc, testing_acc = classifier.train_model(2250, X, Y, 0.5)
+    costs, training_acc, testing_acc = classifier.train_model(10000, X, Y, 0.15)
 
     classifier.generate_plot(costs, training_acc, testing_acc)
 
-    y_hat = classifier.predict(X[800:, :])
+    y_hat = classifier.predict(X[1400:, :])
 
-    y_hat = np.where(y_hat > 0.5, 1, 0)
-    accuracy = np.mean(y_hat == Y[800:])
 
-    # if accuracy > 0.95:
-    #   classifier.save_model(f"models/{layers}{round(accuracy, 3)}.npz")
+    accuracy = np.mean(y_hat == Y[1400:])
+
+    if accuracy > 0.95:
+      classifier.save_model(f"final/models/{layers}{round(accuracy, 3)}.npz")
+
 
     print(f"Accuracy: {accuracy}")
 
